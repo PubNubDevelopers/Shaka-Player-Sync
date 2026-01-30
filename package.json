@@ -43,10 +43,12 @@
     }
   },
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "@types/node": "^20.10.0",
     "@vitest/coverage-v8": "^1.0.0",
     "@vitest/ui": "^1.0.0",
     "eslint": "^9.0.0",
+    "typescript-eslint": "^8.0.0",
     "jsdom": "^24.0.0",
     "pubnub": "^8.0.0",
     "shaka-player": "^4.7.0",
