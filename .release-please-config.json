@@ -1,0 +1,19 @@
+{
+  "packages": {
+    ".": {
+      "include-component-in-tag": false,
+      "include-v-in-tag": true,
+      "component": "",
+      "release-type": "node",
+      "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "src/index.ts"
+        }
+      ]
+    }
+  }
+}

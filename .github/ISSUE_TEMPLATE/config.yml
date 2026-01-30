@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: PubNub Support
+    url: https://support.pubnub.com
+    about: Get help from PubNub Support
+  - name: PubNub Community
+    url: https://community.pubnub.com
+    about: Ask questions in the PubNub Community
+  - name: Shaka Player Issues
+    url: https://github.com/shaka-project/shaka-player/issues
+    about: For issues specific to Shaka Player itself (not related to sync)
+  - name: PubNub JavaScript SDK
+    url: https://github.com/pubnub/javascript/issues
+    about: For issues specific to the PubNub JavaScript SDK

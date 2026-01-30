@@ -1,0 +1,155 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+      - v[0-9]*
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      patch: ${{ steps.release.outputs.patch }}
+    steps:
+      # Create/update release PR
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          # Make sure we create the PR against the correct branch.
+          target-branch: ${{ github.ref_name }}
+          # Use default GITHUB_TOKEN for releases.
+          # If you need a bot token, configure RELEASE_PLEASE_TOKEN secret
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          # See also settings in these files:
+          manifest-file: .release-please-manifest.json
+          config-file: .release-please-config.json
+
+  # The jobs below are all conditional on a release having been created by
+  # someone merging the release PR. They all run in parallel.
+
+  tag-main:
+    runs-on: ubuntu-latest
+    needs: release
+    if: needs.release.outputs.release_created && needs.release.outputs.patch != '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Check out the origin repo at main, not the PR branch.
+          ref: main
+          # Use bot token if available for tag creation
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Tag the main branch
+        run: |
+          # Set git config for the tag.
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Tag the main branch.
+          VERSION=${{ needs.release.outputs.tag_name }}
+          git tag -m "$VERSION-main" "$VERSION-main"
+          git push origin "$VERSION-main"
+
+  npm:
+    runs-on: ubuntu-latest
+    needs: release
+    if: needs.release.outputs.release_created
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ needs.release.outputs.tag_name }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Compute NPM tags
+        run: |
+          # NPM publish always sets a tag. If you don't provide an explicit
+          # tag, you get the "latest" tag by default, but we want "latest" to
+          # always point to the highest version number. So we set an explicit
+          # tag on every "publish" command, then follow up with a command to
+          # set "latest" only if this release was the highest version yet.
+
+          # The explicit tag is based on the branch. If the git tag is v1.2.1,
+          # the branch was v1.2.x, and the explicit NPM tag should be
+          # v1.2-latest.
+          GIT_TAG_NAME=${{ needs.release.outputs.tag_name }}
+          NPM_TAG=$(echo "$GIT_TAG_NAME" | cut -f 1-2 -d .)-latest
+          echo "NPM_TAG=$NPM_TAG" >> $GITHUB_ENV
+
+          # We only tag the NPM package as "latest" if this release is the
+          # highest version to date.
+          RELEASE_TAGS=$(git tag | grep ^v[0-9] | grep -Ev -- '-(master|main)')
+          LATEST_RELEASE=$(echo "$RELEASE_TAGS" | sort --version-sort | tail -1)
+
+          if [[ "$GIT_TAG_NAME" == "$LATEST_RELEASE" ]]; then
+            NPM_LATEST=true
+          else
+            NPM_LATEST=false
+          fi
+          echo NPM_LATEST=$NPM_LATEST >> $GITHUB_ENV
+
+          # Debug the decisions made here.
+          echo "Latest release: $LATEST_RELEASE"
+          echo "This release: $GIT_TAG_NAME"
+          echo "NPM tag: $NPM_TAG"
+          echo "NPM latest: $NPM_LATEST"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+      - name: Publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          # Publish with an explicit tag.
+          # --access public is required for scoped packages (@pubnub/...)
+          npm publish --access public --tag "$NPM_TAG"
+
+          # Add the "latest" tag if needed.
+          if [[ "$NPM_LATEST" == "true" ]]; then
+            NPM_VERSION=$(npm version --json | jq -r '."@pubnub/shaka-player"')
+            npm dist-tag add "@pubnub/shaka-player@$NPM_VERSION" latest
+          fi
+
+      - name: Create tarball
+        run: npm pack
+
+      - name: Attach to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload \
+              ${{ needs.release.outputs.tag_name }} pubnub-shaka-player-*.tgz \
+              --clobber
+
+  auto-branch:
+    runs-on: ubuntu-latest
+    needs: release
+    if: needs.release.outputs.release_created && needs.release.outputs.patch == '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ needs.release.outputs.tag_name }}
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Create release branch
+        run: |
+          TAG=${{ needs.release.outputs.tag_name }}
+          BRANCH=$(echo "$TAG" | sed -e 's/\.0$/.x/')
+          git push origin refs/tags/"$TAG"^{commit}:refs/heads/"$BRANCH"

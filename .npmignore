@@ -1,0 +1,44 @@
+# Source files (TypeScript source available in src/)
+# Keep src/ for "go to definition" in IDEs
+
+# Test files
+tests/
+*.test.ts
+vitest.config.ts
+coverage/
+
+# Development files
+.github/
+.vscode/
+.idea/
+
+# Build config
+tsconfig.json
+eslint.config.*
+.eslintrc*
+.prettierrc*
+
+# Demo (users can find in repo)
+demo/
+
+# Documentation (available on GitHub)
+docs/
+CONTRIBUTING.md
+CHANGELOG.md
+CODE_OF_CONDUCT.md
+SECURITY.md
+
+# Package manager files
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~

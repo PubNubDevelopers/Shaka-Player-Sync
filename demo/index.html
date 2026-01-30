@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Watch Party Demo - @pubnub/shaka-player</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================
+       CSS Variables & Theme
+       ============================================ */
+    :root {
+      --accent: #E11D48;
+      --accent-hover: #BE123C;
+      --accent-glow: rgba(225, 29, 72, 0.3);
+      --bg-deep: #0A0A0F;
+      --bg-surface: #12121A;
+      --bg-elevated: #1A1A25;
+      --bg-hover: #252533;
+      --border: #2A2A3A;
+      --border-focus: #E11D48;
+      --text-primary: #F4F4F5;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      --success: #22C55E;
+      --warning: #F59E0B;
+      --font-sans: 'Space Grotesk', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ============================================
+       Background Pattern
+       ============================================ */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(225, 29, 72, 0.15), transparent),
+        radial-gradient(circle at 20% 80%, rgba(225, 29, 72, 0.05), transparent 40%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* ============================================
+       Layout
+       ============================================ */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent), #FF6B6B);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 2rem;
+    }
+
+    @media (max-width: 1024px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ============================================
+       Video Section
+       ============================================ */
+    .video-section {
+      background: var(--bg-surface);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .video-container {
+      position: relative;
+      background: #000;
+      aspect-ratio: 16 / 9;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .video-info {
+      padding: 1rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border);
+    }
+
+    .video-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .video-time {
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+    }
+
+    /* ============================================
+       Control Panel
+       ============================================ */
+    .control-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: var(--bg-surface);
+      border-radius: 12px;
+      padding: 1.25rem;
+      border: 1px solid var(--border);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-header h2 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ============================================
+       Form Elements
+       ============================================ */
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.4rem;
+      font-weight: 500;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      font-family: var(--font-mono);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    input[type="text"]::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* ============================================
+       Buttons
+       ============================================ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1.1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-family: var(--font-sans);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      width: 100%;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-success:hover:not(:disabled) {
+      filter: brightness(1.1);
+    }
+
+    .btn-warning {
+      background: var(--warning);
+      color: #1A1A25;
+    }
+
+    .btn-warning:hover:not(:disabled) {
+      filter: brightness(1.1);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+
+    .btn-outline:hover:not(:disabled) {
+      background: var(--bg-hover);
+      border-color: var(--text-muted);
+    }
+
+    .btn-danger {
+      background: #DC2626;
+      color: white;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: #B91C1C;
+    }
+
+    .btn-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    /* ============================================
+       Status Badges
+       ============================================ */
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .status-badge.offline {
+      background: rgba(113, 113, 122, 0.2);
+      color: var(--text-muted);
+    }
+
+    .status-badge.online {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--success);
+    }
+
+    .status-badge.master {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .status-badge.online .status-dot {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ============================================
+       Activity Log
+       ============================================ */
+    .log-panel {
+      background: var(--bg-elevated);
+      border-radius: 8px;
+      padding: 0.75rem;
+      max-height: 220px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      line-height: 1.8;
+    }
+
+    .log-panel::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .log-panel::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .log-panel::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    .log-entry {
+      color: var(--text-muted);
+    }
+
+    .log-entry.info { color: #60A5FA; }
+    .log-entry.success { color: var(--success); }
+    .log-entry.warning { color: var(--warning); }
+    .log-entry.error { color: var(--accent); }
+
+    .log-time {
+      color: var(--text-muted);
+      margin-right: 0.5rem;
+      opacity: 0.7;
+    }
+
+    /* ============================================
+       Instructions
+       ============================================ */
+    .instructions {
+      background: linear-gradient(135deg, rgba(225, 29, 72, 0.08), rgba(225, 29, 72, 0.02));
+      border: 1px solid rgba(225, 29, 72, 0.2);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-top: 2rem;
+    }
+
+    .instructions h3 {
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .instructions ol {
+      margin-left: 1.25rem;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .instructions li {
+      margin-bottom: 0.4rem;
+    }
+
+    .instructions code {
+      background: var(--bg-elevated);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+    }
+
+    /* ============================================
+       User ID Display
+       ============================================ */
+    .user-id {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background: var(--bg-elevated);
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      display: inline-block;
+      margin-top: 0.5rem;
+    }
+
+    /* ============================================
+       Hint text
+       ============================================ */
+    .hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+
+    .hint a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .hint a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="logo">
+        <div class="logo-icon">🎬</div>
+        <h1>Watch Party Demo</h1>
+      </div>
+      <p>Real-time playback synchronization powered by PubNub</p>
+    </header>
+
+    <div class="main-grid">
+      <!-- Video Section -->
+      <div class="video-section">
+        <div class="video-container">
+          <video id="video"
+                 poster="https://storage.googleapis.com/shaka-demo-assets/bbb-dark-truths-hls/poster.webp"
+                 controls>
+          </video>
+        </div>
+        <div class="video-info">
+          <span class="video-title" id="video-title">Loading video...</span>
+          <span class="video-time" id="video-time">00:00 / 00:00</span>
+        </div>
+      </div>
+
+      <!-- Control Panel -->
+      <div class="control-panel">
+        <!-- Connection Status -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Status</h2>
+          </div>
+          <div class="status-row">
+            <span class="status-badge offline" id="connection-status">
+              <span class="status-dot"></span>
+              Disconnected
+            </span>
+            <span class="status-badge" id="role-status" style="display: none;">
+              Follower
+            </span>
+          </div>
+          <div class="user-id" id="user-id" style="display: none;"></div>
+        </div>
+
+        <!-- PubNub Keys -->
+        <div class="card">
+          <div class="card-header">
+            <h2>PubNub Keys</h2>
+          </div>
+          <div class="form-group">
+            <label for="publish-key">Publish Key</label>
+            <input type="text" id="publish-key" placeholder="pub-c-xxxx" value="demo">
+          </div>
+          <div class="form-group">
+            <label for="subscribe-key">Subscribe Key</label>
+            <input type="text" id="subscribe-key" placeholder="sub-c-xxxx" value="demo">
+          </div>
+          <p class="hint">
+            Get free keys at <a href="https://admin.pubnub.com" target="_blank">admin.pubnub.com</a>
+          </p>
+        </div>
+
+        <!-- Room Controls -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Sync Room</h2>
+          </div>
+          <div class="form-group">
+            <label for="room-id">Room ID</label>
+            <input type="text" id="room-id" placeholder="my-watch-party" value="demo-room">
+          </div>
+          <div class="btn-group" style="margin-top: 1rem;">
+            <button class="btn btn-primary" id="btn-connect">Connect</button>
+            <button class="btn btn-danger" id="btn-disconnect" disabled>Disconnect</button>
+          </div>
+        </div>
+
+        <!-- Role Controls -->
+        <div class="card" id="role-controls" style="display: none;">
+          <div class="card-header">
+            <h2>Playback Control</h2>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+            The <strong>Master</strong> controls playback for everyone.
+          </p>
+          <div class="btn-group">
+            <button class="btn btn-warning" id="btn-master">👑 Become Master</button>
+            <button class="btn btn-outline" id="btn-follower">👥 Become Follower</button>
+          </div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Activity Log</h2>
+          </div>
+          <div class="log-panel" id="log-panel">
+            <div class="log-entry">Initializing...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instructions">
+      <h3>📋 How to Test</h3>
+      <ol>
+        <li>Open this page in <strong>two browser windows</strong></li>
+        <li>Enter the same <strong>Room ID</strong> in both</li>
+        <li>Click <strong>Connect</strong> in both windows</li>
+        <li>In one window, click <strong>Become Master</strong></li>
+        <li>Play, pause, or seek — the other window syncs automatically!</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- PubNub SDK -->
+  <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.8.0.0.min.js"></script>
+
+  <!-- Shaka Player -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.compiled.min.js"></script>
+
+  <!-- Our Sync Manager (built) -->
+  <script src="../dist/index.global.js"></script>
+
+  <script>
+    // ============================================
+    // Demo Application
+    // ============================================
+
+    // DOM Elements
+    const videoElement = document.getElementById('video');
+    const videoTitle = document.getElementById('video-title');
+    const videoTime = document.getElementById('video-time');
+    const connectionStatus = document.getElementById('connection-status');
+    const roleStatus = document.getElementById('role-status');
+    const userIdDisplay = document.getElementById('user-id');
+    const roleControls = document.getElementById('role-controls');
+    const logPanel = document.getElementById('log-panel');
+
+    const publishKeyInput = document.getElementById('publish-key');
+    const subscribeKeyInput = document.getElementById('subscribe-key');
+    const roomIdInput = document.getElementById('room-id');
+
+    const btnConnect = document.getElementById('btn-connect');
+    const btnDisconnect = document.getElementById('btn-disconnect');
+    const btnMaster = document.getElementById('btn-master');
+    const btnFollower = document.getElementById('btn-follower');
+
+    // State
+    let player = null;
+    let syncManager = null;
+
+    const sampleVideo = {
+      title: 'Big Buck Bunny',
+      url: 'https://storage.googleapis.com/shaka-demo-assets/bbb-dark-truths/dash.mpd'
+    };
+
+    // ============================================
+    // Logging
+    // ============================================
+    function log(message, type = 'info') {
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.innerHTML = `<span class="log-time">[${time}]</span> ${message}`;
+      logPanel.appendChild(entry);
+      logPanel.scrollTop = logPanel.scrollHeight;
+      console.log(`[${type.toUpperCase()}] ${message}`);
+    }
+
+    // ============================================
+    // UI Updates
+    // ============================================
+    function updateConnectionUI(connected) {
+      if (connected) {
+        connectionStatus.className = 'status-badge online';
+        connectionStatus.innerHTML = '<span class="status-dot"></span> Connected';
+        btnConnect.disabled = true;
+        btnDisconnect.disabled = false;
+        roleControls.style.display = 'block';
+        roleStatus.style.display = 'inline-flex';
+        userIdDisplay.style.display = 'inline-block';
+      } else {
+        connectionStatus.className = 'status-badge offline';
+        connectionStatus.innerHTML = '<span class="status-dot"></span> Disconnected';
+        btnConnect.disabled = false;
+        btnDisconnect.disabled = true;
+        roleControls.style.display = 'none';
+        roleStatus.style.display = 'none';
+        userIdDisplay.style.display = 'none';
+      }
+    }
+
+    function updateRoleUI(role) {
+      if (role === 'master') {
+        roleStatus.className = 'status-badge master';
+        roleStatus.textContent = '👑 Master';
+        btnMaster.disabled = true;
+        btnFollower.disabled = false;
+      } else {
+        roleStatus.className = 'status-badge online';
+        roleStatus.textContent = '👥 Follower';
+        btnMaster.disabled = false;
+        btnFollower.disabled = true;
+      }
+    }
+
+    function updateVideoTime() {
+      if (!videoElement.duration) return;
+      const current = formatTime(videoElement.currentTime);
+      const duration = formatTime(videoElement.duration);
+      videoTime.textContent = `${current} / ${duration}`;
+    }
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // ============================================
+    // Shaka Player Setup
+    // ============================================
+    async function initPlayer() {
+      shaka.polyfill.installAll();
+
+      if (!shaka.Player.isBrowserSupported()) {
+        log('Browser not supported!', 'error');
+        return false;
+      }
+
+      player = new shaka.Player();
+      await player.attach(videoElement);
+
+      player.addEventListener('error', (event) => {
+        log(`Player error: ${event.detail.message}`, 'error');
+      });
+
+      try {
+        await player.load(sampleVideo.url);
+        videoTitle.textContent = sampleVideo.title;
+        log(`Loaded: ${sampleVideo.title}`, 'success');
+      } catch (error) {
+        log(`Failed to load video: ${error.message}`, 'error');
+        return false;
+      }
+
+      videoElement.addEventListener('timeupdate', updateVideoTime);
+      return true;
+    }
+
+    // ============================================
+    // Sync Manager
+    // ============================================
+    function connect() {
+      const publishKey = publishKeyInput.value.trim();
+      const subscribeKey = subscribeKeyInput.value.trim();
+      const roomId = roomIdInput.value.trim();
+
+      if (!publishKey || !subscribeKey) {
+        log('Please enter PubNub keys', 'error');
+        return;
+      }
+
+      if (!roomId) {
+        log('Please enter a Room ID', 'error');
+        return;
+      }
+
+      try {
+        log(`Connecting to room: ${roomId}...`);
+
+        // Get SyncManager from global
+        const { SyncManager } = PubNubShakaSync;
+
+        syncManager = new SyncManager(player, {
+          publishKey,
+          subscribeKey,
+          PubNub: PubNub, // Pass global PubNub
+        });
+
+        // Event listeners
+        syncManager.addEventListener('masterchanged', (event) => {
+          if (event.previousRole === 'master') {
+            updateRoleUI('follower');
+            log(`Another user claimed master — you are now a follower`, 'warning');
+          } else {
+            log(`User ${event.newMasterId} is now the master`, 'info');
+          }
+        });
+
+        syncManager.addEventListener('userjoined', (event) => {
+          log(`User joined: ${event.userId}`, 'info');
+        });
+
+        syncManager.addEventListener('userleft', (event) => {
+          log(`User left: ${event.userId}`, 'info');
+        });
+
+        syncManager.connect(roomId);
+
+        updateConnectionUI(true);
+        updateRoleUI('follower');
+        userIdDisplay.textContent = `ID: ${syncManager.getUserId()}`;
+        log(`Connected! Your ID: ${syncManager.getUserId()}`, 'success');
+
+      } catch (error) {
+        log(`Connection failed: ${error.message}`, 'error');
+      }
+    }
+
+    function disconnect() {
+      if (syncManager) {
+        syncManager.disconnect();
+        syncManager = null;
+      }
+      updateConnectionUI(false);
+      log('Disconnected from room', 'warning');
+    }
+
+    function becomeMaster() {
+      if (syncManager) {
+        syncManager.becomeMaster();
+        updateRoleUI('master');
+        log('You are now the MASTER — your controls sync everyone!', 'success');
+      }
+    }
+
+    function becomeFollower() {
+      if (syncManager) {
+        syncManager.becomeFollower();
+        updateRoleUI('follower');
+        log('You are now a FOLLOWER', 'info');
+      }
+    }
+
+    // ============================================
+    // Event Listeners
+    // ============================================
+    btnConnect.addEventListener('click', connect);
+    btnDisconnect.addEventListener('click', disconnect);
+    btnMaster.addEventListener('click', becomeMaster);
+    btnFollower.addEventListener('click', becomeFollower);
+
+    // ============================================
+    // Initialize
+    // ============================================
+    document.addEventListener('DOMContentLoaded', async () => {
+      log('Initializing Shaka Player...');
+      const success = await initPlayer();
+      if (success) {
+        log('Ready! Enter room details and click Connect.', 'success');
+      }
+    });
+  </script>
+</body>
+</html>

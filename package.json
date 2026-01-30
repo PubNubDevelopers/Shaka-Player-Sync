@@ -1,0 +1,93 @@
+{
+  "name": "@pubnub/shaka-player",
+  "version": "1.0.1",
+  "description": "Real-time playback synchronization for Shaka Player using PubNub - enables Watch Party experiences",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "browser": "dist/index.global.js",
+  "unpkg": "dist/index.global.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm,iife --dts --clean --global-name PubNubShakaSync",
+    "build:watch": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "prepublishOnly": "npm run test && npm run build"
+  },
+  "peerDependencies": {
+    "shaka-player": ">=4.0.0",
+    "pubnub": ">=8.0.0"
+  },
+  "peerDependenciesMeta": {
+    "pubnub": {
+      "optional": false
+    },
+    "shaka-player": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "@vitest/ui": "^1.0.0",
+    "eslint": "^9.0.0",
+    "jsdom": "^24.0.0",
+    "pubnub": "^8.0.0",
+    "shaka-player": "^4.7.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "keywords": [
+    "shaka-player",
+    "pubnub",
+    "video",
+    "sync",
+    "synchronization",
+    "watch-party",
+    "real-time",
+    "streaming",
+    "dash",
+    "hls",
+    "video-player"
+  ],
+  "author": {
+    "name": "PubNub",
+    "email": "support@pubnub.com",
+    "url": "https://www.pubnub.com"
+  },
+  "maintainers": [
+    {
+      "name": "Markus Kohler",
+      "email": "markus.kohler@pubnub.com"
+    }
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PubNubDevelopers/Shaka-Player-Sync.git"
+  },
+  "bugs": {
+    "url": "https://github.com/PubNubDevelopers/Shaka-Player-Sync/issues"
+  },
+  "homepage": "https://github.com/PubNubDevelopers/Shaka-Player-Sync#readme",
+  "engines": {
+    "node": ">=18"
+  }
+}
