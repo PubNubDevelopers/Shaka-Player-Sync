@@ -241,3 +241,4 @@ Apache 2.0 - See [LICENSE](LICENSE)
 *Based on [Shaka Player](https://github.com/shaka-project/shaka-player) by Google*
 
 </div>
+
