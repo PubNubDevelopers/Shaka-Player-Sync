@@ -22,3 +22,4 @@ export type {
   SyncRole,
   SyncManagerEvents,
 } from './types';
+// v1.1.1
