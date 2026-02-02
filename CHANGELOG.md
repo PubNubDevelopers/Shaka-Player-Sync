@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.1](https://github.com/PubNubDevelopers/Shaka-Player-Sync/compare/v1.1.0...v1.1.1) (2026-02-02)
+
+
+### Bug Fixes
+
+* prepare npm publish with correct tokens ([8a1c163](https://github.com/PubNubDevelopers/Shaka-Player-Sync/commit/8a1c16365102db84332d80d9dfefc581d187edaf))
+
 ## [1.1.0](https://github.com/PubNubDevelopers/Shaka-Player-Sync/compare/v1.0.1...v1.1.0) (2026-01-30)
 
 
