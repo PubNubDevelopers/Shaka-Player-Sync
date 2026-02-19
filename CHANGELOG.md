@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0](https://github.com/PubNubDevelopers/Shaka-Player-Sync/compare/v1.1.2...v1.2.0) (2026-02-19)
+
+
+### Features
+
+* add Access Manager (PAM) support, light theme demo, bump to v1.1.2 ([87045d4](https://github.com/PubNubDevelopers/Shaka-Player-Sync/commit/87045d468be818d9a5031ecaf8fa479d3dc2743a))
+* initial release of shaka-player sync library v1.0.1 ([ead7ab1](https://github.com/PubNubDevelopers/Shaka-Player-Sync/commit/ead7ab13c15bdc4ffbeb9888d5d51566d53eca37))
+
+
+### Bug Fixes
+
+* add eslint config for v9, disable pages workflow until enabled ([1753795](https://github.com/PubNubDevelopers/Shaka-Player-Sync/commit/1753795669c237fa42af1a7a24035e14628f22b0))
+* prepare npm publish with correct tokens ([8a1c163](https://github.com/PubNubDevelopers/Shaka-Player-Sync/commit/8a1c16365102db84332d80d9dfefc581d187edaf))
+* update package-lock.json with eslint dependencies ([2a9fc84](https://github.com/PubNubDevelopers/Shaka-Player-Sync/commit/2a9fc84fae9c9a0969916fa3e8150ec0fd752f7b))
+
 ## [Unreleased]
 
 ### Added - Access Manager (PAM v3) Support
