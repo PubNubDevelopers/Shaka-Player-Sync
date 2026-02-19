@@ -14,6 +14,7 @@ import type {
   SyncManagerEvents,
   SyncEventListener,
   ShakaPlayer,
+  GrantTokenOptions,
 } from './types';
 
 /**
@@ -148,12 +149,28 @@ export class SyncManager {
     this.channelName = `shaka-sync-${roomId}`;
     console.log('[SyncManager] Connecting to room:', this.channelName);
 
-    // Initialize PubNub client
-    this.pubnub = new PubNubClass({
+    // Build PubNub config, conditionally including secretKey for Access Manager
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pubnubConfig: any = {
       publishKey: this.config.publishKey,
       subscribeKey: this.config.subscribeKey,
       userId: this.userId,
-    });
+    };
+
+    if (this.config.secretKey) {
+      pubnubConfig.secretKey = this.config.secretKey;
+      console.log('[SyncManager] Secret Key provided — Access Manager grant operations enabled');
+    }
+
+    // Initialize PubNub client
+    this.pubnub = new PubNubClass(pubnubConfig);
+
+    // Apply auth token if provided (Access Manager v3)
+    if (this.config.authToken) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (this.pubnub as any).setToken(this.config.authToken);
+      console.log('[SyncManager] Auth token applied');
+    }
 
     // Set up status listener
     this.pubnub.addListener({
@@ -285,6 +302,123 @@ export class SyncManager {
     return this.userId;
   }
 
+  // =========================================================================
+  // PUBLIC API: Access Manager
+  // =========================================================================
+
+  /**
+   * Sets (or replaces) the Access Manager auth token at runtime.
+   * Use this to refresh an expired token without reconnecting.
+   *
+   * @param token - A valid Access Manager v3 token string
+   */
+  setAuthToken(token: string): void {
+    if (!this.pubnub) {
+      // Store it for the next connect() call
+      this.config.authToken = token;
+      console.log('[SyncManager] Auth token stored (will be applied on connect)');
+      return;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (this.pubnub as any).setToken(token);
+    this.config.authToken = token;
+    console.log('[SyncManager] Auth token updated at runtime');
+  }
+
+  /**
+   * Grants an Access Manager v3 token for the current sync room.
+   * **Requires `secretKey` in the config.** This should only be called
+   * from a server or for demo/testing purposes.
+   *
+   * @param options - Grant options (ttl, optional authorized_uuid, optional channel permissions)
+   * @returns The granted token string
+   */
+  async grantToken(options: GrantTokenOptions): Promise<string> {
+    if (!this.pubnub) {
+      throw new Error('[SyncManager] Not connected. Call connect() before grantToken().');
+    }
+
+    if (!this.config.secretKey) {
+      throw new Error(
+        '[SyncManager] secretKey is required to grant tokens. ' +
+        'Provide it in the SyncManager config (server-side or demo only).'
+      );
+    }
+
+    const channelName = this.channelName || `shaka-sync-${options.authorized_uuid || 'unknown'}`;
+    // Default channels: grant read+write on the sync channel AND read on the
+    // presence channel (-pnpres). Without the -pnpres grant, presence events
+    // (join/leave/timeout) will be denied when Access Manager is enabled.
+    const channels = options.channels || {
+      [channelName]: { read: true, write: true },
+      [`${channelName}-pnpres`]: { read: true },
+    };
+
+    try {
+      // Build grant params — only include authorized_uuid if explicitly provided.
+      // Per PubNub docs: if authorized_uuid is omitted, the token can be used
+      // by any client with any userId (required for sharing tokens across users).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const grantParams: any = {
+        ttl: options.ttl,
+        resources: {
+          channels,
+        },
+      };
+
+      if (options.authorized_uuid) {
+        grantParams.authorized_uuid = options.authorized_uuid;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (this.pubnub as any).grantToken(grantParams);
+
+      // The result is the token string directly
+      const token = typeof result === 'string' ? result : result?.data?.token || result?.token || result;
+      console.log('[SyncManager] Token granted, TTL:', options.ttl, 'min');
+      return token;
+    } catch (error) {
+      console.error('[SyncManager] Failed to grant token:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Parses an Access Manager v3 token and returns the embedded permissions.
+   * Useful for debugging and inspecting token contents.
+   *
+   * @param token - The token string to parse
+   * @returns Parsed token object with ttl, authorized_uuid, resources, and patterns
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  parseToken(token: string): any {
+    if (!this.pubnub) {
+      throw new Error('[SyncManager] Not connected. Call connect() before parseToken().');
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (this.pubnub as any).parseToken(token);
+  }
+
+  /**
+   * Static utility to parse an Access Manager token without needing a
+   * connected SyncManager instance. Requires passing the PubNub class.
+   *
+   * @param token - The token string to parse
+   * @param PubNubClass - The PubNub constructor class
+   * @returns Parsed token object
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  static parseToken(token: string, PubNubClass: new (config: any) => PubNub): any {
+    const tempPubnub = new PubNubClass({
+      subscribeKey: 'parse-only',
+      userId: 'parse-only',
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (tempPubnub as any).parseToken(token);
+  }
+
   /**
    * Adds an event listener.
    */
@@ -397,12 +531,28 @@ export class SyncManager {
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await this.pubnub.publish({
-        channel: this.channelName,
-        message: message,
-      } as any);
+      const publishParams = { channel: this.channelName, message: message } as any;
+      await this.pubnub.publish(publishParams);
       console.log('[SyncManager] Broadcast:', command, payload);
     } catch (error) {
+      // Check for 403 Forbidden (Access Manager denial)
+      if (this.isAccessDeniedError(error)) {
+        console.warn('[SyncManager] Access denied on publish — attempting token refresh');
+        const refreshed = await this.attemptTokenRefresh();
+        if (refreshed) {
+          // Retry the publish once after token refresh
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const retryParams = { channel: this.channelName, message: message } as any;
+            await this.pubnub!.publish(retryParams);
+            console.log('[SyncManager] Broadcast (after refresh):', command, payload);
+            return;
+          } catch (retryError) {
+            console.error('[SyncManager] Broadcast failed after token refresh:', retryError);
+          }
+        }
+        return;
+      }
       console.error('[SyncManager] Failed to broadcast:', error);
     }
   }
@@ -429,12 +579,27 @@ export class SyncManager {
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await this.pubnub.publish({
-        channel: this.channelName,
-        message: message,
-      } as any);
+      const publishParams = { channel: this.channelName, message: message } as any;
+      await this.pubnub.publish(publishParams);
       console.log('[SyncManager] Broadcast master claim');
     } catch (error) {
+      // Check for 403 Forbidden (Access Manager denial)
+      if (this.isAccessDeniedError(error)) {
+        console.warn('[SyncManager] Access denied on master claim — attempting token refresh');
+        const refreshed = await this.attemptTokenRefresh();
+        if (refreshed) {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const retryParams = { channel: this.channelName, message: message } as any;
+            await this.pubnub!.publish(retryParams);
+            console.log('[SyncManager] Broadcast master claim (after refresh)');
+            return;
+          } catch (retryError) {
+            console.error('[SyncManager] Master claim failed after token refresh:', retryError);
+          }
+        }
+        return;
+      }
       console.error('[SyncManager] Failed to broadcast master claim:', error);
     }
   }
@@ -567,6 +732,19 @@ export class SyncManager {
 
   private onPubNubStatus(statusEvent: { category: string }): void {
     console.log('[SyncManager] PubNub status:', statusEvent.category);
+
+    // Detect Access Manager denied status on subscribe
+    if (statusEvent.category === 'PNAccessDeniedCategory') {
+      console.warn('[SyncManager] Access denied on subscribe channel');
+      this.attemptTokenRefresh().then((refreshed) => {
+        if (!refreshed) {
+          // No refresh callback or refresh failed — emit event
+          this.emit('accessdenied', {
+            reason: 'Subscribe access denied. Token may be missing, expired, or lacks read permission.',
+          });
+        }
+      });
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -577,6 +755,60 @@ export class SyncManager {
       this.emit('userjoined', { userId: event.uuid, occupancy: event.occupancy });
     } else if (event.action === 'leave' || event.action === 'timeout') {
       this.emit('userleft', { userId: event.uuid, occupancy: event.occupancy });
+    }
+  }
+
+  // =========================================================================
+  // PRIVATE: Access Manager Helpers
+  // =========================================================================
+
+  /**
+   * Checks whether an error is a 403 Access Denied error from PubNub.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private isAccessDeniedError(error: any): boolean {
+    if (!error) return false;
+    // PubNub SDK errors may contain statusCode or status
+    const statusCode = error?.status?.statusCode || error?.statusCode || error?.status;
+    if (statusCode === 403) return true;
+    // Also check the error message
+    const msg = String(error?.message || error || '').toLowerCase();
+    return msg.includes('forbidden') || msg.includes('access denied') || msg.includes('403');
+  }
+
+  /**
+   * Attempts to refresh the auth token using the configured `onTokenExpired` callback.
+   * Returns true if the token was successfully refreshed and applied.
+   */
+  private async attemptTokenRefresh(): Promise<boolean> {
+    if (!this.config.onTokenExpired) {
+      this.emit('accessdenied', {
+        reason: 'Access denied (403). No onTokenExpired callback configured to refresh the token.',
+      });
+      return false;
+    }
+
+    try {
+      console.log('[SyncManager] Calling onTokenExpired callback to refresh token...');
+      const newToken = await this.config.onTokenExpired();
+
+      if (newToken && typeof newToken === 'string') {
+        this.setAuthToken(newToken);
+        console.log('[SyncManager] Token refreshed successfully');
+        return true;
+      }
+
+      console.warn('[SyncManager] onTokenExpired callback returned an invalid token');
+      this.emit('accessdenied', {
+        reason: 'Token refresh callback returned an invalid token.',
+      });
+      return false;
+    } catch (error) {
+      console.error('[SyncManager] Token refresh callback failed:', error);
+      this.emit('accessdenied', {
+        reason: `Token refresh failed: ${error instanceof Error ? error.message : String(error)}`,
+      });
+      return false;
     }
   }
 

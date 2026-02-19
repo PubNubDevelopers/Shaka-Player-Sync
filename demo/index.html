@@ -14,18 +14,19 @@
     :root {
       --accent: #E11D48;
       --accent-hover: #BE123C;
-      --accent-glow: rgba(225, 29, 72, 0.3);
-      --bg-deep: #0A0A0F;
-      --bg-surface: #12121A;
-      --bg-elevated: #1A1A25;
-      --bg-hover: #252533;
-      --border: #2A2A3A;
+      --accent-glow: rgba(225, 29, 72, 0.15);
+      --bg-deep: #F5F5F7;
+      --bg-surface: #FFFFFF;
+      --bg-elevated: #F0F0F3;
+      --bg-hover: #E8E8ED;
+      --border: #D4D4D8;
       --border-focus: #E11D48;
-      --text-primary: #F4F4F5;
-      --text-secondary: #A1A1AA;
+      --text-primary: #18181B;
+      --text-secondary: #52525B;
       --text-muted: #71717A;
-      --success: #22C55E;
-      --warning: #F59E0B;
+      --success: #16A34A;
+      --warning: #D97706;
+      --link: #4B7BEC;
       --font-sans: 'Space Grotesk', system-ui, sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
     }
@@ -52,8 +53,8 @@
       position: fixed;
       inset: 0;
       background:
-        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(225, 29, 72, 0.15), transparent),
-        radial-gradient(circle at 20% 80%, rgba(225, 29, 72, 0.05), transparent 40%);
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(225, 29, 72, 0.06), transparent),
+        radial-gradient(circle at 20% 80%, rgba(225, 29, 72, 0.03), transparent 40%);
       pointer-events: none;
       z-index: -1;
     }
@@ -272,7 +273,7 @@
 
     .btn-warning {
       background: var(--warning);
-      color: #1A1A25;
+      color: #FFFFFF;
     }
 
     .btn-warning:hover:not(:disabled) {
@@ -327,17 +328,17 @@
     }
 
     .status-badge.offline {
-      background: rgba(113, 113, 122, 0.2);
+      background: rgba(113, 113, 122, 0.12);
       color: var(--text-muted);
     }
 
     .status-badge.online {
-      background: rgba(34, 197, 94, 0.15);
+      background: rgba(22, 163, 74, 0.1);
       color: var(--success);
     }
 
     .status-badge.master {
-      background: rgba(245, 158, 11, 0.15);
+      background: rgba(217, 119, 6, 0.1);
       color: var(--warning);
     }
 
@@ -388,10 +389,10 @@
       color: var(--text-muted);
     }
 
-    .log-entry.info { color: #60A5FA; }
+    .log-entry.info { color: #2563EB; }
     .log-entry.success { color: var(--success); }
     .log-entry.warning { color: var(--warning); }
-    .log-entry.error { color: var(--accent); }
+    .log-entry.error { color: #DC2626; }
 
     .log-time {
       color: var(--text-muted);
@@ -403,8 +404,8 @@
        Instructions
        ============================================ */
     .instructions {
-      background: linear-gradient(135deg, rgba(225, 29, 72, 0.08), rgba(225, 29, 72, 0.02));
-      border: 1px solid rgba(225, 29, 72, 0.2);
+      background: linear-gradient(135deg, rgba(225, 29, 72, 0.04), rgba(225, 29, 72, 0.01));
+      border: 1px solid rgba(225, 29, 72, 0.15);
       border-radius: 12px;
       padding: 1.25rem;
       margin-top: 2rem;
@@ -437,6 +438,15 @@
       font-size: 0.8rem;
     }
 
+    .instructions a {
+      color: var(--link);
+      text-decoration: none;
+    }
+
+    .instructions a:hover {
+      text-decoration: underline;
+    }
+
     /* ============================================
        User ID Display
        ============================================ */
@@ -461,12 +471,162 @@
     }
 
     .hint a {
-      color: var(--accent);
+      color: var(--link);
       text-decoration: none;
     }
 
     .hint a:hover {
       text-decoration: underline;
+    }
+
+    /* ============================================
+       Toggle Switch
+       ============================================ */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .toggle-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: var(--bg-hover);
+      border-radius: 24px;
+      transition: background 0.2s;
+      border: 1px solid var(--border);
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      height: 18px;
+      width: 18px;
+      left: 2px;
+      bottom: 2px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background: rgba(225, 29, 72, 0.15);
+      border-color: var(--accent);
+    }
+
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(20px);
+      background: var(--accent);
+    }
+
+    /* ============================================
+       Access Manager Card
+       ============================================ */
+    .pam-content {
+      display: none;
+    }
+
+    .pam-content.visible {
+      display: block;
+    }
+
+    .pam-warning {
+      background: rgba(217, 119, 6, 0.08);
+      border: 1px solid rgba(217, 119, 6, 0.25);
+      border-radius: 8px;
+      padding: 0.6rem 0.8rem;
+      font-size: 0.75rem;
+      color: #92400E;
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+
+    .token-display {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 0.8rem;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      word-break: break-all;
+      max-height: 80px;
+      overflow-y: auto;
+      margin-top: 0.5rem;
+      user-select: all;
+      cursor: text;
+    }
+
+    .token-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-top: 0.5rem;
+    }
+
+    .token-status.none { color: var(--text-muted); }
+    .token-status.valid { color: var(--success); }
+    .token-status.expired { color: var(--accent); }
+
+    select {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      font-family: var(--font-mono);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2352525B' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    select option {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    textarea::placeholder {
+      color: var(--text-muted);
     }
   </style>
 </head>
@@ -533,6 +693,84 @@
           </p>
         </div>
 
+        <!-- Access Manager -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Access Manager</h2>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">Enable Access Manager</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="pam-toggle">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="pam-content" id="pam-content">
+            <div class="pam-warning">
+              ⚠️ Secret Key in browser is for <strong>demo/testing only</strong>.
+              In production, grant tokens from your server — never expose the Secret Key to clients.
+            </div>
+
+            <!-- Mode selector: Admin (has secret key) vs Follower (has token) -->
+            <div class="form-group">
+              <label>PAM Mode</label>
+              <div class="btn-group" style="margin-bottom: 0;">
+                <button class="btn btn-primary btn-sm" id="btn-pam-admin" style="font-size: 0.8rem; padding: 0.5rem;">🔑 Admin (Secret Key)</button>
+                <button class="btn btn-outline btn-sm" id="btn-pam-follower" style="font-size: 0.8rem; padding: 0.5rem;">🎟️ Follower (Token)</button>
+              </div>
+            </div>
+
+            <!-- Admin mode: Secret Key + Token generation -->
+            <div id="pam-admin-section">
+              <div class="form-group">
+                <label for="secret-key">Secret Key</label>
+                <input type="text" id="secret-key" placeholder="sec-c-xxxx">
+              </div>
+              <div class="form-group">
+                <label for="ttl-select">Token TTL</label>
+                <select id="ttl-select">
+                  <option value="5">5 minutes (short test)</option>
+                  <option value="15">15 minutes</option>
+                  <option value="30" selected>30 minutes</option>
+                  <option value="60">60 minutes</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>
+                  <input type="checkbox" id="auto-grant-toggle" checked style="margin-right: 0.4rem; accent-color: var(--accent);">
+                  Auto-grant token on connect
+                </label>
+              </div>
+              <button class="btn btn-primary" id="btn-grant-token" disabled>Grant Token</button>
+            </div>
+
+            <!-- Follower mode: Paste a pre-granted token -->
+            <div id="pam-follower-section" style="display: none;">
+              <div class="form-group">
+                <label for="auth-token-input">Auth Token</label>
+                <textarea id="auth-token-input" rows="3" placeholder="Paste a token from the Admin window..." style="width: 100%; padding: 0.7rem 0.9rem; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 0.8rem; font-family: var(--font-mono); resize: vertical; transition: border-color 0.2s, box-shadow 0.2s;"></textarea>
+              </div>
+              <p class="hint">
+                Get a token from the Admin window (click Copy Token) and paste it here before connecting.
+              </p>
+            </div>
+
+            <!-- Token status (shown for both modes) -->
+            <div id="token-info" style="display: none; margin-top: 0.75rem;">
+              <div class="token-status none" id="token-status">
+                <span class="status-dot"></span> No token
+              </div>
+              <div class="token-display" id="token-display">—</div>
+              <button class="btn btn-outline" id="btn-copy-token" style="margin-top: 0.5rem; font-size: 0.75rem; padding: 0.4rem 0.7rem;">📋 Copy Token</button>
+            </div>
+
+            <p class="hint" style="margin-top: 0.75rem;">
+              Enable Access Manager on your keyset in the
+              <a href="https://admin.pubnub.com" target="_blank">Admin Portal</a> first.
+            </p>
+          </div>
+        </div>
+
         <!-- Room Controls -->
         <div class="card">
           <div class="card-header">
@@ -576,19 +814,48 @@
 
     <!-- Instructions -->
     <div class="instructions">
-      <h3>📋 How to Test</h3>
+      <h3>📋 How to Test (Basic)</h3>
       <ol>
         <li>Open this page in <strong>two browser windows</strong></li>
-        <li>Enter the same <strong>Room ID</strong> in both</li>
+        <li>Enter the same <strong>PubNub Keys</strong> and <strong>Room ID</strong> in both</li>
         <li>Click <strong>Connect</strong> in both windows</li>
         <li>In one window, click <strong>Become Master</strong></li>
         <li>Play, pause, or seek — the other window syncs automatically!</li>
       </ol>
     </div>
+
+    <div class="instructions">
+      <h3>🔒 How to Test Access Manager</h3>
+      <ol>
+        <li><strong>Enable Access Manager</strong> on your keyset in the <a href="https://admin.pubnub.com" target="_blank">Admin Portal</a></li>
+        <li>
+          <strong>Window 1 — Admin (Master):</strong>
+          <ol style="margin-left: 1rem; margin-top: 0.4rem;">
+            <li>Toggle <strong>Enable Access Manager</strong> ON</li>
+            <li>Select <strong>🔑 Admin</strong> mode, enter your <strong>Secret Key</strong></li>
+            <li>Leave <strong>Auto-grant on connect</strong> checked</li>
+            <li>Click <strong>Connect</strong> — a token is auto-granted and applied</li>
+            <li>Click <strong>📋 Copy Token</strong> to copy the token</li>
+            <li>Click <strong>Become Master</strong></li>
+          </ol>
+        </li>
+        <li>
+          <strong>Window 2 — Follower:</strong>
+          <ol style="margin-left: 1rem; margin-top: 0.4rem;">
+            <li>Toggle <strong>Enable Access Manager</strong> ON</li>
+            <li>Select <strong>🎟️ Follower</strong> mode</li>
+            <li>Paste the copied token into the <strong>Auth Token</strong> field</li>
+            <li>Click <strong>Connect</strong> — the follower subscribes with the token</li>
+          </ol>
+        </li>
+        <li>Play, pause, or seek in the Master window — the Follower window syncs!</li>
+        <li>To test <strong>token refresh</strong>, set a short TTL (5 min) and wait for it to expire — the Admin window will auto-refresh</li>
+      </ol>
+    </div>
   </div>
 
-  <!-- PubNub SDK -->
-  <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.8.0.0.min.js"></script>
+  <!-- PubNub SDK (latest v10.x — required for Access Manager v3 grantToken/setToken) -->
+  <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.10.2.7.js"></script>
 
   <!-- Shaka Player -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.compiled.min.js"></script>
@@ -620,9 +887,29 @@
     const btnMaster = document.getElementById('btn-master');
     const btnFollower = document.getElementById('btn-follower');
 
+    // Access Manager elements
+    const pamToggle = document.getElementById('pam-toggle');
+    const pamContent = document.getElementById('pam-content');
+    const secretKeyInput = document.getElementById('secret-key');
+    const ttlSelect = document.getElementById('ttl-select');
+    const btnGrantToken = document.getElementById('btn-grant-token');
+    const tokenInfo = document.getElementById('token-info');
+    const tokenStatus = document.getElementById('token-status');
+    const tokenDisplay = document.getElementById('token-display');
+    const btnPamAdmin = document.getElementById('btn-pam-admin');
+    const btnPamFollower = document.getElementById('btn-pam-follower');
+    const pamAdminSection = document.getElementById('pam-admin-section');
+    const pamFollowerSection = document.getElementById('pam-follower-section');
+    const authTokenInput = document.getElementById('auth-token-input');
+    const btnCopyToken = document.getElementById('btn-copy-token');
+    const autoGrantToggle = document.getElementById('auto-grant-toggle');
+
     // State
     let player = null;
     let syncManager = null;
+    let currentToken = null;
+    let pamEnabled = false;
+    let pamMode = 'admin'; // 'admin' or 'follower'
 
     const sampleVideo = {
       title: 'Big Buck Bunny',
@@ -726,7 +1013,7 @@
     // ============================================
     // Sync Manager
     // ============================================
-    function connect() {
+    async function connect() {
       const publishKey = publishKeyInput.value.trim();
       const subscribeKey = subscribeKeyInput.value.trim();
       const roomId = roomIdInput.value.trim();
@@ -747,11 +1034,53 @@
         // Get SyncManager from global
         const { SyncManager } = PubNubShakaSync;
 
-        syncManager = new SyncManager(player, {
+        // Build config, conditionally adding Access Manager fields
+        const syncConfig = {
           publishKey,
           subscribeKey,
           PubNub: PubNub, // Pass global PubNub
-        });
+        };
+
+        if (pamEnabled) {
+          if (pamMode === 'admin') {
+            // Admin mode: use Secret Key for grant operations
+            const secretKey = secretKeyInput.value.trim();
+            if (secretKey) {
+              syncConfig.secretKey = secretKey;
+              log('PAM Admin: Secret Key configured', 'info');
+            } else {
+              log('Warning: PAM enabled but no Secret Key entered', 'warning');
+            }
+
+            // Wire up auto-refresh: when a 403 is detected, auto-grant a new token
+            if (secretKey) {
+              syncConfig.onTokenExpired = async () => {
+                log('PAM: Token expired — auto-granting new token...', 'warning');
+                return await autoGrantToken();
+              };
+            }
+
+            // Apply existing token if we have one
+            if (currentToken) {
+              syncConfig.authToken = currentToken;
+              log('PAM Admin: Existing auth token applied', 'info');
+            }
+          } else {
+            // Follower mode: use a manually pasted token
+            const pastedToken = authTokenInput.value.trim();
+            if (pastedToken) {
+              currentToken = pastedToken;
+              syncConfig.authToken = pastedToken;
+              log('PAM Follower: Auth token applied from input', 'info');
+              updateTokenStatusUI('valid');
+              tokenDisplay.textContent = pastedToken;
+            } else {
+              log('Warning: PAM enabled but no token entered. You may get 403 errors.', 'warning');
+            }
+          }
+        }
+
+        syncManager = new SyncManager(player, syncConfig);
 
         // Event listeners
         syncManager.addEventListener('masterchanged', (event) => {
@@ -771,7 +1100,32 @@
           log(`User left: ${event.userId}`, 'info');
         });
 
+        // Access Manager: listen for access denied events
+        syncManager.addEventListener('accessdenied', (event) => {
+          log(`🚫 ACCESS DENIED: ${event.reason}`, 'error');
+          updateTokenStatusUI('expired');
+        });
+
         syncManager.connect(roomId);
+
+        // After connecting, enable the Grant Token button if PAM admin mode
+        if (pamEnabled && pamMode === 'admin') {
+          btnGrantToken.disabled = false;
+
+          // Auto-grant token on connect if enabled
+          if (autoGrantToggle.checked && secretKeyInput.value.trim()) {
+            log('PAM: Auto-granting token on connect...', 'info');
+            try {
+              const token = await autoGrantToken();
+              if (token) {
+                syncManager.setAuthToken(token);
+                log('PAM: Auto-grant successful — token applied', 'success');
+              }
+            } catch (e) {
+              log(`PAM: Auto-grant failed: ${e.message}`, 'error');
+            }
+          }
+        }
 
         updateConnectionUI(true);
         updateRoleUI('follower');
@@ -789,7 +1143,14 @@
         syncManager = null;
       }
       updateConnectionUI(false);
+      btnGrantToken.disabled = true;
       log('Disconnected from room', 'warning');
+
+      // Don't clear the token — allow follower windows to reuse it
+      // But reset the token status if it was "expired"
+      if (currentToken) {
+        updateTokenStatusUI('valid');
+      }
     }
 
     function becomeMaster() {
@@ -807,6 +1168,167 @@
         log('You are now a FOLLOWER', 'info');
       }
     }
+
+    // ============================================
+    // Access Manager
+    // ============================================
+    function updateTokenStatusUI(status) {
+      tokenInfo.style.display = 'block';
+      if (status === 'valid') {
+        tokenStatus.className = 'token-status valid';
+        tokenStatus.innerHTML = '<span class="status-dot" style="background: var(--success);"></span> Token active';
+      } else if (status === 'expired') {
+        tokenStatus.className = 'token-status expired';
+        tokenStatus.innerHTML = '<span class="status-dot" style="background: var(--accent);"></span> Token expired / denied';
+      } else {
+        tokenStatus.className = 'token-status none';
+        tokenStatus.innerHTML = '<span class="status-dot" style="background: var(--text-muted);"></span> No token';
+      }
+    }
+
+    function setPamMode(mode) {
+      pamMode = mode;
+      if (mode === 'admin') {
+        btnPamAdmin.className = 'btn btn-primary btn-sm';
+        btnPamAdmin.style.fontSize = '0.8rem';
+        btnPamAdmin.style.padding = '0.5rem';
+        btnPamFollower.className = 'btn btn-outline btn-sm';
+        btnPamFollower.style.fontSize = '0.8rem';
+        btnPamFollower.style.padding = '0.5rem';
+        pamAdminSection.style.display = 'block';
+        pamFollowerSection.style.display = 'none';
+        log('PAM mode: Admin (Secret Key)', 'info');
+      } else {
+        btnPamFollower.className = 'btn btn-primary btn-sm';
+        btnPamFollower.style.fontSize = '0.8rem';
+        btnPamFollower.style.padding = '0.5rem';
+        btnPamAdmin.className = 'btn btn-outline btn-sm';
+        btnPamAdmin.style.fontSize = '0.8rem';
+        btnPamAdmin.style.padding = '0.5rem';
+        pamAdminSection.style.display = 'none';
+        pamFollowerSection.style.display = 'block';
+        log('PAM mode: Follower (paste token)', 'info');
+      }
+    }
+
+    /**
+     * Core grant function — used by both manual Grant Token button
+     * and auto-grant on connect / token refresh.
+     */
+    async function autoGrantToken() {
+      if (!syncManager) {
+        throw new Error('Connect to a room first');
+      }
+
+      const ttl = parseInt(ttlSelect.value, 10);
+      const roomId = roomIdInput.value.trim();
+      const channelName = `shaka-sync-${roomId}`;
+
+      // Grant read+write on the sync channel and read on the presence channel.
+      // Per PubNub docs, the -pnpres channel must be explicitly granted read
+      // access for presence events to work with Access Manager.
+      // authorized_uuid is intentionally omitted so the token can be used
+      // by ANY client (admin copies it to follower windows).
+      const token = await syncManager.grantToken({
+        ttl,
+        channels: {
+          [channelName]: { read: true, write: true },
+          [`${channelName}-pnpres`]: { read: true },
+        },
+      });
+
+      currentToken = token;
+      tokenDisplay.textContent = typeof token === 'string' ? token : String(token);
+      updateTokenStatusUI('valid');
+
+      // Try to parse and show details
+      try {
+        const parsed = syncManager.parseToken(token);
+        if (parsed && parsed.ttl) {
+          log(`Token details — TTL: ${parsed.ttl}min, authorized UUID: ${parsed.authorized_uuid || 'any'}`, 'info');
+        }
+      } catch (e) {
+        // parseToken may not be available in all SDK versions
+        console.log('Token parse info not available:', e);
+      }
+
+      return token;
+    }
+
+    async function grantToken() {
+      if (!syncManager) {
+        log('Connect to a room first before granting a token', 'error');
+        return;
+      }
+
+      const secretKey = secretKeyInput.value.trim();
+      if (!secretKey) {
+        log('Please enter your Secret Key to grant tokens', 'error');
+        return;
+      }
+
+      const ttl = parseInt(ttlSelect.value, 10);
+      const roomId = roomIdInput.value.trim();
+      const channelName = `shaka-sync-${roomId}`;
+
+      try {
+        log(`Granting token (TTL: ${ttl} min) for channel: ${channelName}...`);
+
+        const token = await autoGrantToken();
+
+        // Apply the token immediately
+        syncManager.setAuthToken(token);
+
+        log(`✅ Token granted and applied! TTL: ${ttl} min`, 'success');
+        log(`💡 Use "Copy Token" to share with Follower windows`, 'info');
+
+      } catch (error) {
+        log(`Failed to grant token: ${error.message || error}`, 'error');
+        updateTokenStatusUI('expired');
+      }
+    }
+
+    // PAM toggle
+    pamToggle.addEventListener('change', () => {
+      pamEnabled = pamToggle.checked;
+      if (pamEnabled) {
+        pamContent.classList.add('visible');
+        log('Access Manager enabled', 'info');
+      } else {
+        pamContent.classList.remove('visible');
+        currentToken = null;
+        tokenInfo.style.display = 'none';
+        log('Access Manager disabled', 'info');
+      }
+    });
+
+    // PAM mode buttons
+    btnPamAdmin.addEventListener('click', () => setPamMode('admin'));
+    btnPamFollower.addEventListener('click', () => setPamMode('follower'));
+
+    // Grant Token button
+    btnGrantToken.addEventListener('click', grantToken);
+
+    // Copy Token button
+    btnCopyToken.addEventListener('click', () => {
+      if (currentToken) {
+        navigator.clipboard.writeText(String(currentToken)).then(() => {
+          log('📋 Token copied to clipboard! Paste it in the Follower window.', 'success');
+          btnCopyToken.textContent = '✅ Copied!';
+          setTimeout(() => { btnCopyToken.textContent = '📋 Copy Token'; }, 2000);
+        }).catch(() => {
+          // Fallback: select and copy from the display
+          const range = document.createRange();
+          range.selectNodeContents(tokenDisplay);
+          window.getSelection().removeAllRanges();
+          window.getSelection().addRange(range);
+          document.execCommand('copy');
+          log('📋 Token copied (fallback)', 'success');
+        });
+      } else {
+        log('No token to copy — grant one first', 'warning');
+      }
+    });
 
     // ============================================
     // Event Listeners

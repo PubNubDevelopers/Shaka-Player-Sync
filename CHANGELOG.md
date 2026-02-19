@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added - Access Manager (PAM v3) Support
+
+#### New API Methods
+- `setAuthToken(token)` — Set or refresh the Access Manager auth token at runtime
+- `grantToken(options)` — Grant an Access Manager token (requires `secretKey`)
+- `parseToken(token)` — Decode a token to inspect permissions and TTL
+- `SyncManager.parseToken(token, PubNub)` — Static token parser (no connection needed)
+
+#### New Configuration Options
+- `authToken` — Pre-set an Access Manager v3 token
+- `secretKey` — PubNub Secret Key for server-side/demo token grants
+- `onTokenExpired` — Async callback for automatic token refresh on 403
+
+#### New Events
+- `accessdenied` — Emitted when a 403 Forbidden response is received from PubNub
+
+#### Improvements
+- `connect()` now conditionally includes `secretKey` and applies `authToken` via `setToken()`
+- `broadcastCommand()` and `broadcastMasterClaim()` detect 403 errors and auto-retry after token refresh
+- `onPubNubStatus()` detects `PNAccessDeniedCategory` and triggers token refresh
+- Demo updated with full Access Manager UI (Admin/Follower modes, token granting, copy/paste workflow)
+- PubNub SDK updated to v10.2.7 for Access Manager v3 `grantToken`/`setToken` support
+
+---
+
 ## [1.1.1](https://github.com/PubNubDevelopers/Shaka-Player-Sync/compare/v1.1.0...v1.1.1) (2026-02-02)
 
 

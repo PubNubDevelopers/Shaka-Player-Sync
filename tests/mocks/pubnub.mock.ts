@@ -21,6 +21,9 @@ export interface MockPubNubInstance {
   removeAllListeners: ReturnType<typeof vi.fn>;
   destroy: ReturnType<typeof vi.fn>;
   channel: ReturnType<typeof vi.fn>;
+  setToken: ReturnType<typeof vi.fn>;
+  grantToken: ReturnType<typeof vi.fn>;
+  parseToken: ReturnType<typeof vi.fn>;
   _subscription: MockSubscription;
   _listeners: { status?: (event: unknown) => void }[];
 }
@@ -56,6 +59,16 @@ export function createMockPubNubInstance(): MockPubNubInstance {
     channel: vi.fn().mockReturnValue({
       subscription: vi.fn().mockReturnValue(subscription),
     }),
+    setToken: vi.fn(),
+    grantToken: vi.fn().mockResolvedValue('mock-token-string'),
+    parseToken: vi.fn().mockReturnValue({
+      version: 2,
+      timestamp: Date.now(),
+      ttl: 15,
+      authorized_uuid: undefined,
+      resources: { channels: {}, groups: {}, uuids: {} },
+      patterns: { channels: {}, groups: {}, uuids: {} },
+    }),
     _subscription: subscription,
     _listeners: listeners,
   };
@@ -86,6 +99,17 @@ export function createMockPubNubClass() {
 export function simulateMessage(subscription: MockSubscription, message: unknown) {
   if (subscription.onMessage) {
     subscription.onMessage({ message });
+  }
+}
+
+/**
+ * Simulates a PubNub status event (e.g., PNAccessDeniedCategory)
+ */
+export function simulateStatus(instance: MockPubNubInstance, category: string) {
+  for (const listener of instance._listeners) {
+    if (listener.status) {
+      listener.status({ category });
+    }
   }
 }
 

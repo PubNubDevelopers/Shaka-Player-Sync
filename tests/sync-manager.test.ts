@@ -9,6 +9,7 @@ import {
   createMockPubNubClass,
   simulateMessage,
   simulatePresence,
+  simulateStatus,
   type MockPubNubInstance,
 } from './mocks/pubnub.mock';
 import type { ShakaPlayer, SyncMessage } from '../src/types';
@@ -856,6 +857,369 @@ describe('SyncManager', () => {
 
       // Old listener should not be called
       expect(listener).not.toHaveBeenCalled();
+    });
+  });
+
+  // =========================================================================
+  // Access Manager Tests
+  // =========================================================================
+
+  describe('Access Manager', () => {
+    describe('connect with Access Manager config', () => {
+      it('should pass secretKey to PubNub when provided', () => {
+        syncManager = new SyncManager(player, {
+          ...defaultConfig,
+          secretKey: 'sec-c-test',
+          PubNub: MockPubNub,
+        });
+
+        syncManager.connect('test-room');
+
+        expect(MockPubNub).toHaveBeenCalledWith({
+          publishKey: 'pub-c-test',
+          subscribeKey: 'sub-c-test',
+          userId: 'test-user-123',
+          secretKey: 'sec-c-test',
+        });
+      });
+
+      it('should call setToken when authToken is provided', () => {
+        syncManager = new SyncManager(player, {
+          ...defaultConfig,
+          authToken: 'test-auth-token',
+          PubNub: MockPubNub,
+        });
+
+        syncManager.connect('test-room');
+
+        const instance = (MockPubNub as unknown as { getInstance: () => MockPubNubInstance }).getInstance();
+        expect(instance?.setToken).toHaveBeenCalledWith('test-auth-token');
+      });
+
+      it('should not call setToken when authToken is not provided', () => {
+        syncManager = new SyncManager(player, {
+          ...defaultConfig,
+          PubNub: MockPubNub,
+        });
+
+        syncManager.connect('test-room');
+
+        const instance = (MockPubNub as unknown as { getInstance: () => MockPubNubInstance }).getInstance();
+        expect(instance?.setToken).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('setAuthToken', () => {
+      it('should store token in config when not connected', () => {
+        syncManager = new SyncManager(player, { ...defaultConfig, PubNub: MockPubNub });
+
+        syncManager.setAuthToken('pre-connect-token');
+
+        // Connect and check that the token was applied
+        syncManager.connect('test-room');
+        const instance = (MockPubNub as unknown as { getInstance: () => MockPubNubInstance }).getInstance();
+        expect(instance?.setToken).toHaveBeenCalledWith('pre-connect-token');
+      });
+
+      it('should call setToken on PubNub when connected', () => {
+        syncManager = new SyncManager(player, { ...defaultConfig, PubNub: MockPubNub });
+        syncManager.connect('test-room');
+
+        const instance = (MockPubNub as unknown as { getInstance: () => MockPubNubInstance }).getInstance();
+
+        syncManager.setAuthToken('runtime-token');
+
+        expect(instance?.setToken).toHaveBeenCalledWith('runtime-token');
+      });
+    });
+
+    describe('grantToken', () => {
+      it('should throw when not connected', async () => {
+        syncManager = new SyncManager(player, {
+          ...defaultConfig,
+          secretKey: 'sec-c-test',
+          PubNub: MockPubNub,
+        });
+
+        await expect(syncManager.grantToken({ ttl: 15 })).rejects.toThrow(
+          'Not connected'
+        );
+      });
+
+      it('should throw when secretKey is not configured', async () => {
+        syncManager = new SyncManager(player, { ...defaultConfig, PubNub: MockPubNub });
+        syncManager.connect('test-room');
+
+        await expect(syncManager.grantToken({ ttl: 15 })).rejects.toThrow(
+          'secretKey is required'
+        );
+      });
+
+      it('should call pubnub.grantToken with correct default params', async () => {
+        syncManager = new SyncManager(player, {
+          ...defaultConfig,
+          secretKey: 'sec-c-test',
+          PubNub: MockPubNub,
+        });
+        syncManager.connect('test-room');
+
+        const instance = (MockPubNub as unknown as { getInstance: () => MockPubNubInstance }).getInstance();
+
+        await syncManager.grantToken({ ttl: 30 });
+
+        expect(instance?.grantToken).toHaveBeenCalledWith({
+          ttl: 30,
+          resources: {
+            channels: {
+              'shaka-sync-test-room': { read: true, write: true },
+              'shaka-sync-test-room-pnpres': { read: true },
+            },
+          },
+        });
+      });
+
+      it('should include presence channel in default grant', async () => {
+        syncManager = new SyncManager(player, {
+          ...defaultConfig,
+          secretKey: 'sec-c-test',
+          PubNub: MockPubNub,
+        });
+        syncManager.connect('test-room');
+
+        const instance = (MockPubNub as unknown as { getInstance: () => MockPubNubInstance }).getInstance();
+
+        await syncManager.grantToken({ ttl: 15 });
+
+        const callArgs = instance?.grantToken.mock.calls[0][0];
+        expect(callArgs.resources.channels).toHaveProperty('shaka-sync-test-room-pnpres');
+        expect(callArgs.resources.channels['shaka-sync-test-room-pnpres']).toEqual({ read: true });
+      });
+
+      it('should use custom channels when provided', async () => {
+        syncManager = new SyncManager(player, {
+          ...defaultConfig,
+          secretKey: 'sec-c-test',
+          PubNub: MockPubNub,
+        });
+        syncManager.connect('test-room');
+
+        const instance = (MockPubNub as unknown as { getInstance: () => MockPubNubInstance }).getInstance();
+
+        const customChannels = {
+          'custom-channel': { read: true, write: true },
+        };
+
+        await syncManager.grantToken({ ttl: 15, channels: customChannels });
+
+        expect(instance?.grantToken).toHaveBeenCalledWith({
+          ttl: 15,
+          resources: {
+            channels: customChannels,
+          },
+        });
+      });
+
+      it('should include authorized_uuid when provided', async () => {
+        syncManager = new SyncManager(player, {
+          ...defaultConfig,
+          secretKey: 'sec-c-test',
+          PubNub: MockPubNub,
+        });
+        syncManager.connect('test-room');
+
+        const instance = (MockPubNub as unknown as { getInstance: () => MockPubNubInstance }).getInstance();
+
+        await syncManager.grantToken({
+          ttl: 15,
+          authorized_uuid: 'specific-user',
+        });
+
+        const callArgs = instance?.grantToken.mock.calls[0][0];
+        expect(callArgs.authorized_uuid).toBe('specific-user');
+      });
+
+      it('should omit authorized_uuid when not provided', async () => {
+        syncManager = new SyncManager(player, {
+          ...defaultConfig,
+          secretKey: 'sec-c-test',
+          PubNub: MockPubNub,
+        });
+        syncManager.connect('test-room');
+
+        const instance = (MockPubNub as unknown as { getInstance: () => MockPubNubInstance }).getInstance();
+
+        await syncManager.grantToken({ ttl: 15 });
+
+        const callArgs = instance?.grantToken.mock.calls[0][0];
+        expect(callArgs.authorized_uuid).toBeUndefined();
+      });
+
+      it('should return the token string', async () => {
+        syncManager = new SyncManager(player, {
+          ...defaultConfig,
+          secretKey: 'sec-c-test',
+          PubNub: MockPubNub,
+        });
+        syncManager.connect('test-room');
+
+        const token = await syncManager.grantToken({ ttl: 15 });
+
+        expect(typeof token).toBe('string');
+        expect(token).toBe('mock-token-string');
+      });
+    });
+
+    describe('parseToken', () => {
+      it('should throw when not connected', () => {
+        syncManager = new SyncManager(player, { ...defaultConfig, PubNub: MockPubNub });
+
+        expect(() => syncManager.parseToken('some-token')).toThrow('Not connected');
+      });
+
+      it('should call pubnub.parseToken with the token', () => {
+        syncManager = new SyncManager(player, { ...defaultConfig, PubNub: MockPubNub });
+        syncManager.connect('test-room');
+
+        const instance = (MockPubNub as unknown as { getInstance: () => MockPubNubInstance }).getInstance();
+
+        syncManager.parseToken('test-token');
+
+        expect(instance?.parseToken).toHaveBeenCalledWith('test-token');
+      });
+
+      it('should return the parsed token object', () => {
+        syncManager = new SyncManager(player, { ...defaultConfig, PubNub: MockPubNub });
+        syncManager.connect('test-room');
+
+        const result = syncManager.parseToken('test-token');
+
+        expect(result).toHaveProperty('version');
+        expect(result).toHaveProperty('ttl');
+        expect(result).toHaveProperty('resources');
+      });
+    });
+
+    describe('accessdenied event', () => {
+      it('should emit accessdenied on PNAccessDeniedCategory status', async () => {
+        syncManager = new SyncManager(player, { ...defaultConfig, PubNub: MockPubNub });
+        syncManager.connect('test-room');
+
+        const listener = vi.fn();
+        syncManager.addEventListener('accessdenied', listener);
+
+        const instance = (MockPubNub as unknown as { getInstance: () => MockPubNubInstance }).getInstance();
+        simulateStatus(instance!, 'PNAccessDeniedCategory');
+
+        // Allow the async attemptTokenRefresh to resolve
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        expect(listener).toHaveBeenCalledWith(
+          expect.objectContaining({
+            reason: expect.stringContaining('denied'),
+          })
+        );
+      });
+
+      it('should call onTokenExpired callback on 403', async () => {
+        const onTokenExpired = vi.fn().mockResolvedValue('refreshed-token');
+
+        syncManager = new SyncManager(player, {
+          ...defaultConfig,
+          onTokenExpired,
+          PubNub: MockPubNub,
+        });
+        syncManager.connect('test-room');
+
+        const instance = (MockPubNub as unknown as { getInstance: () => MockPubNubInstance }).getInstance();
+        simulateStatus(instance!, 'PNAccessDeniedCategory');
+
+        // Allow the async attemptTokenRefresh to resolve
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        expect(onTokenExpired).toHaveBeenCalled();
+        expect(instance?.setToken).toHaveBeenCalledWith('refreshed-token');
+      });
+
+      it('should emit accessdenied when onTokenExpired returns invalid value', async () => {
+        const onTokenExpired = vi.fn().mockResolvedValue(null);
+
+        syncManager = new SyncManager(player, {
+          ...defaultConfig,
+          onTokenExpired,
+          PubNub: MockPubNub,
+        });
+        syncManager.connect('test-room');
+
+        const listener = vi.fn();
+        syncManager.addEventListener('accessdenied', listener);
+
+        const instance = (MockPubNub as unknown as { getInstance: () => MockPubNubInstance }).getInstance();
+        simulateStatus(instance!, 'PNAccessDeniedCategory');
+
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        expect(listener).toHaveBeenCalledWith(
+          expect.objectContaining({
+            reason: expect.stringContaining('invalid token'),
+          })
+        );
+      });
+
+      it('should emit accessdenied when onTokenExpired throws', async () => {
+        const onTokenExpired = vi.fn().mockRejectedValue(new Error('Network error'));
+
+        syncManager = new SyncManager(player, {
+          ...defaultConfig,
+          onTokenExpired,
+          PubNub: MockPubNub,
+        });
+        syncManager.connect('test-room');
+
+        const listener = vi.fn();
+        syncManager.addEventListener('accessdenied', listener);
+
+        const instance = (MockPubNub as unknown as { getInstance: () => MockPubNubInstance }).getInstance();
+        simulateStatus(instance!, 'PNAccessDeniedCategory');
+
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        expect(listener).toHaveBeenCalledWith(
+          expect.objectContaining({
+            reason: expect.stringContaining('Network error'),
+          })
+        );
+      });
+    });
+
+    describe('publish 403 retry', () => {
+      it('should retry publish after token refresh on 403', async () => {
+        const onTokenExpired = vi.fn().mockResolvedValue('new-token');
+
+        syncManager = new SyncManager(player, {
+          ...defaultConfig,
+          onTokenExpired,
+          PubNub: MockPubNub,
+        });
+        syncManager.connect('test-room');
+        syncManager.becomeMaster();
+
+        const instance = (MockPubNub as unknown as { getInstance: () => MockPubNubInstance }).getInstance();
+
+        // Make publish fail with 403 first, then succeed
+        instance!.publish
+          .mockRejectedValueOnce({ status: { statusCode: 403 } })
+          .mockResolvedValue({ timetoken: '12345' });
+
+        // Trigger a play event from master to force a publish
+        video.currentTime = 10;
+        video.dispatchEvent('play');
+
+        // Allow async operations to complete
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        // Token refresh should have been called
+        expect(onTokenExpired).toHaveBeenCalled();
+      });
     });
   });
 });

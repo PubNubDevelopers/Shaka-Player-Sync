@@ -29,6 +29,7 @@ Looking for the original? See [shaka-player on npm](https://www.npmjs.com/packag
 | **Master/Follower Control** | - | **Y** |
 | **Automatic Drift Correction** | - | **Y** |
 | **Presence Events** | - | **Y** |
+| **Access Manager (Token Security)** | - | **Y** |
 
 ---
 
@@ -89,6 +90,10 @@ syncManager.becomeMaster();
 | `isConnected()` | Returns connection status |
 | `getRoomId()` | Returns current room ID |
 | `getUserId()` | Returns this client's user ID |
+| `setAuthToken(token)` | Set or refresh the Access Manager auth token at runtime |
+| `grantToken(options)` | Grant an Access Manager token (requires `secretKey`) |
+| `parseToken(token)` | Decode a token to inspect permissions and TTL |
+| `SyncManager.parseToken(token, PubNub)` | Static token parser (no connection needed) |
 | `destroy()` | Clean up resources |
 
 ### Events
@@ -97,13 +102,177 @@ syncManager.becomeMaster();
 syncManager.addEventListener('masterchanged', (event) => {
   console.log('New master:', event.newMasterId);
 });
+
+syncManager.addEventListener('accessdenied', (event) => {
+  console.error('Access denied:', event.reason);
+});
 ```
+
+| Event | Data | Description |
+|-------|------|-------------|
+| `masterchanged` | `{ newMasterId, previousRole }` | Another user claimed master |
+| `userjoined` | `{ userId, occupancy }` | A user joined the room |
+| `userleft` | `{ userId, occupancy }` | A user left the room |
+| `connected` | `{ roomId }` | Successfully connected to a room |
+| `disconnected` | `{ roomId }` | Disconnected from a room |
+| `accessdenied` | `{ reason }` | Access Manager denied a request (403) |
+
+---
+
+## Access Manager (Optional Security)
+
+PubNub Access Manager lets you secure Watch Party rooms with time-limited, per-user tokens. Access Manager is **completely optional** — if you don't need it, the library works without any token configuration.
+
+### Why Use Access Manager?
+
+- Prevent unauthorized users from joining or controlling Watch Party rooms
+- Restrict **Master** (publish) access to specific users
+- Issue time-limited tokens that automatically expire
+- Revoke access at any time
+
+### Server-Side Token Granting (Recommended)
+
+In production, your server authenticates users and grants scoped tokens. The client never sees the Secret Key.
+
+```
+Client → Your Server → PubNub grantToken() → token → Client → SyncManager
+```
+
+**Server-side (Node.js):**
+
+```javascript
+import PubNub from 'pubnub';
+
+const pubnub = new PubNub({
+  publishKey: 'pub-c-xxx',
+  subscribeKey: 'sub-c-xxx',
+  secretKey: 'sec-c-xxx',  // Never expose this to clients
+  userId: 'server',
+});
+
+// Grant a token for a specific user and room
+const token = await pubnub.grantToken({
+  ttl: 60,  // 60 minutes
+  authorized_uuid: 'user-123',
+  resources: {
+    channels: {
+      'shaka-sync-friday-movie': { read: true, write: true },
+      'shaka-sync-friday-movie-pnpres': { read: true },  // Required for presence events
+    },
+  },
+});
+
+// Send `token` to the authenticated client
+```
+
+**Client-side:**
+
+```javascript
+const syncManager = new SyncManager(player, {
+  publishKey: 'pub-c-xxx',
+  subscribeKey: 'sub-c-xxx',
+  PubNub: PubNub,
+  authToken: token,  // Token from your server
+});
+
+syncManager.connect('friday-movie');
+```
+
+### Automatic Token Refresh
+
+Tokens expire. Provide an `onTokenExpired` callback to seamlessly refresh tokens without interrupting the session:
+
+```javascript
+const syncManager = new SyncManager(player, {
+  publishKey: 'pub-c-xxx',
+  subscribeKey: 'sub-c-xxx',
+  PubNub: PubNub,
+  authToken: initialToken,
+  onTokenExpired: async () => {
+    const res = await fetch('/api/pubnub/token');
+    const { token } = await res.json();
+    return token;
+  },
+});
+```
+
+When a `403 Forbidden` response is detected, the library automatically calls `onTokenExpired`, applies the new token, and retries the failed operation.
+
+### Runtime Token Updates
+
+Update the token at any time without reconnecting:
+
+```javascript
+syncManager.setAuthToken(newToken);
+```
+
+### Role-Based Tokens
+
+Issue different tokens for different roles:
+
+| Role | Channel Permissions | Presence Channel (`-pnpres`) | Use Case |
+|------|------------|----------|----------|
+| **Master** | `{ read: true, write: true }` | `{ read: true }` | Can publish sync commands |
+| **Follower** | `{ read: true }` | `{ read: true }` | Can only receive sync commands |
+
+> **Note:** Both roles need `{ read: true }` on the `-pnpres` suffixed channel for presence events (join/leave) to work.
+
+### Token Debugging
+
+Inspect a token's permissions and TTL:
+
+```javascript
+// Instance method (requires connection)
+const info = syncManager.parseToken(token);
+console.log(info.ttl, info.authorized_uuid, info.resources);
+
+// Static method (no connection needed)
+const info = SyncManager.parseToken(token, PubNub);
+```
+
+### Access Manager Events
+
+Listen for access denial events:
+
+```javascript
+syncManager.addEventListener('accessdenied', (event) => {
+  console.error('Access denied:', event.reason);
+  // Redirect to login, show error UI, etc.
+});
+```
+
+### Demo / Testing Mode
+
+For quick testing, you can pass the Secret Key directly (browser demo only — **never do this in production**):
+
+```javascript
+const syncManager = new SyncManager(player, {
+  publishKey: 'pub-c-xxx',
+  subscribeKey: 'sub-c-xxx',
+  secretKey: 'sec-c-xxx',  // Demo only!
+  PubNub: PubNub,
+});
+
+syncManager.connect('test-room');
+
+// Grant a token from the client (demo only)
+const token = await syncManager.grantToken({ ttl: 30 });
+syncManager.setAuthToken(token);
+```
+
+### Setup Checklist
+
+1. Enable **Access Manager** on your keyset in the [PubNub Admin Portal](https://admin.pubnub.com)
+2. Store your **Secret Key** securely on your server
+3. Implement a server endpoint that authenticates users and calls `grantToken()`
+4. Pass the token to the client via `authToken` in the SyncManager config
+5. Optionally add an `onTokenExpired` callback for automatic refresh
 
 ---
 
 ## How Sync Works
 
-<img src="assets/shaka-player-diagram.png" alt="PubNub Shaka Player Sync Architecture" width="100%">
+<img src="https://raw.githubusercontent.com/PubNubDevelopers/Shaka-Player-Sync/main/assets/shaka-player-diagram.png" alt="PubNub Shaka Player Sync Architecture" width="100%">
 
 1. **Master** controls playback (play, pause, seek)
 2. Commands are sent instantly via PubNub to all connected clients
@@ -233,7 +402,7 @@ Apache 2.0 - See [LICENSE](LICENSE)
 **Powered by [PubNub](https://www.pubnub.com)**
 
 <a href="https://www.pubnub.com">
-  <img src="assets/pn-logo.png" alt="PubNub" height="50">
+  <img src="https://raw.githubusercontent.com/PubNubDevelopers/Shaka-Player-Sync/main/assets/pn-logo.png" alt="PubNub" height="50">
 </a>
 
 <br><br>

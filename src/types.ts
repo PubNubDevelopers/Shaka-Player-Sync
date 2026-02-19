@@ -64,6 +64,40 @@ export interface SyncManagerConfig {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   PubNub?: new (config: any) => PubNub;
+
+  /**
+   * Optional Access Manager v3 auth token.
+   * When provided, the PubNub client will use this token for all API requests.
+   * Tokens are generated server-side using `grantToken()` with a Secret Key.
+   *
+   * @see https://www.pubnub.com/docs/general/security/access-control
+   */
+  authToken?: string;
+
+  /**
+   * Optional PubNub Secret Key.
+   * **WARNING: Only use on the server or for demo/testing purposes.**
+   * Never expose the Secret Key in production client-side code.
+   * Required for calling `grantToken()` from the SyncManager.
+   */
+  secretKey?: string;
+
+  /**
+   * Optional async callback invoked when the current auth token expires
+   * (i.e., a 403 Forbidden response is received). The callback should
+   * return a fresh token string. The SyncManager will apply it automatically
+   * via `setToken()` and retry the failed operation.
+   *
+   * @example
+   * ```typescript
+   * onTokenExpired: async () => {
+   *   const res = await fetch('/api/token');
+   *   const { token } = await res.json();
+   *   return token;
+   * }
+   * ```
+   */
+  onTokenExpired?: () => Promise<string>;
 }
 
 /**
@@ -134,6 +168,31 @@ export interface UserLeftEventData {
 }
 
 /**
+ * Event data for the 'accessdenied' event.
+ * Emitted when a 403 Forbidden response is received from PubNub,
+ * indicating that the current auth token is missing, expired, or
+ * lacks the required permissions.
+ */
+export interface AccessDeniedEventData {
+  /** Human-readable reason for the access denial */
+  reason: string;
+}
+
+/**
+ * Options for the `grantToken()` method on SyncManager.
+ */
+export interface GrantTokenOptions {
+  /** Time-to-live in minutes (1 to 43200). */
+  ttl: number;
+
+  /** The UUID authorized to use this token. Defaults to the current userId. */
+  authorized_uuid?: string;
+
+  /** Channel permissions to grant. If omitted, the current room channel is used with read+write. */
+  channels?: Record<string, { read?: boolean; write?: boolean; get?: boolean; manage?: boolean; update?: boolean; join?: boolean; delete?: boolean }>;
+}
+
+/**
  * Events emitted by SyncManager.
  */
 export interface SyncManagerEvents {
@@ -151,6 +210,9 @@ export interface SyncManagerEvents {
 
   /** Emitted when disconnected from a sync room */
   disconnected: { roomId: string };
+
+  /** Emitted when a 403 Forbidden response is received (Access Manager) */
+  accessdenied: AccessDeniedEventData;
 }
 
 /**
