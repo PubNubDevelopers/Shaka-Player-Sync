@@ -11,7 +11,7 @@
  * Library version. Updated automatically by release-please.
  */
 // x-release-please-start-version
-export const version = '1.1.2';
+export const version = '1.2.0';
 // x-release-please-end
 
 export { SyncManager } from './sync-manager';
