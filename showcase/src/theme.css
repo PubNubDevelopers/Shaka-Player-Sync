@@ -1,0 +1,779 @@
+/* ============================================
+   Global Theme — Dark Space
+   ============================================ */
+
+:root {
+  /* Background */
+  --deep-space: #06060A;
+  --surface: #0D1117;
+  --surface-elevated: #161B22;
+
+  /* Globe / arcs */
+  --globe-wire: #1E293B;
+  --atmosphere-blue: #3B82F6;
+  --atmosphere-purple: #8B5CF6;
+
+  /* Message colors */
+  --play-green: #22C55E;
+  --pause-amber: #F59E0B;
+  --seek-blue: #3B82F6;
+  --sync-purple: #8B5CF6;
+  --presence-cyan: #06B6D4;
+  --danger-red: #EF4444;
+  --host-gold: #FBBF24;
+  --state-white: #F8FAFC;
+
+  /* Brand */
+  --accent-red: #E11D48;
+
+  /* Text */
+  --text-primary: #F4F4F5;
+  --text-muted: #71717A;
+  --text-dim: #3F3F46;
+  --code-green: #4ADE80;
+
+  /* Glass */
+  --glass-bg: rgba(15, 15, 25, 0.75);
+  --glass-bg-solid: rgba(12, 12, 20, 0.92);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-active: rgba(255, 255, 255, 0.15);
+
+  /* Fonts */
+  --font-sans: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #06060A;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   Viewport — 16:9 letterboxed
+   ============================================ */
+#viewport {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  margin: auto;
+  background: var(--deep-space);
+  overflow: hidden;
+  /* Center in window */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* Scale to fit */
+  transform-origin: center center;
+}
+
+#scene-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* ============================================
+   Star field background
+   ============================================ */
+#scene-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #06060A;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================
+   Dev Controls Overlay
+   ============================================ */
+#dev-controls {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(15, 15, 25, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 8px 16px;
+  z-index: 9999;
+  user-select: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+#dev-controls button {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #F4F4F5;
+  font-size: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+#dev-controls button:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+#scrubber {
+  width: 400px;
+  accent-color: #007AFF;
+  cursor: pointer;
+}
+
+#time-display {
+  color: rgba(255, 255, 255, 0.5);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  min-width: 120px;
+}
+
+/* ============================================
+   Video Player Panel (floating glass card)
+   ============================================ */
+.video-panel {
+  position: absolute;
+  width: 280px;
+  background: var(--glass-bg-solid);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  z-index: 10;
+}
+
+.video-panel.synced {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(59, 130, 246, 0.08),
+    0 0 0 1px rgba(59, 130, 246, 0.1) inset;
+}
+
+.video-panel.warning {
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(239, 68, 68, 0.08),
+    0 0 0 1px rgba(239, 68, 68, 0.1) inset;
+}
+
+/* Thumbnail area */
+.video-panel__thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(135deg, #1a1a2e, #16162a);
+  overflow: hidden;
+}
+
+.video-panel__thumb-bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.video-panel__thumb-bar {
+  width: 4px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+}
+
+.video-panel__thumb-bar.active {
+  background: rgba(255, 255, 255, 0.2);
+  animation: thumb-wave 1.2s ease-in-out infinite;
+}
+
+@keyframes thumb-wave {
+  0%, 100% { height: 15px; }
+  50% { height: 35px; }
+}
+
+.video-panel__thumb-bar:nth-child(1) { animation-delay: 0s; }
+.video-panel__thumb-bar:nth-child(2) { animation-delay: 0.15s; }
+.video-panel__thumb-bar:nth-child(3) { animation-delay: 0.3s; }
+.video-panel__thumb-bar:nth-child(4) { animation-delay: 0.45s; }
+.video-panel__thumb-bar:nth-child(5) { animation-delay: 0.6s; }
+
+/* Buffering spinner */
+.video-panel__spinner {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-panel__spinner.visible {
+  display: flex;
+}
+
+.video-panel__spinner-ring {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Paused overlay */
+.video-panel__paused-icon {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.video-panel__paused-icon.visible {
+  display: flex;
+}
+
+/* Progress bar */
+.video-panel__progress {
+  position: relative;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.video-panel__progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--accent-red);
+  border-radius: 0 2px 2px 0;
+  transition: width 0.1s linear;
+}
+
+.video-panel__progress-head {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+}
+
+/* Info row */
+.video-panel__info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+}
+
+.video-panel__city {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
+.video-panel__city-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--presence-cyan);
+}
+
+.video-panel__city-dot.host {
+  background: var(--host-gold);
+}
+
+.video-panel__time {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ============================================
+   Shockwave ring
+   ============================================ */
+.shockwave {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(59, 130, 246, 0.6);
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0;
+}
+
+/* ============================================
+   Center text overlay
+   ============================================ */
+.center-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.center-text__line {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  opacity: 0;
+}
+
+/* ============================================
+   Warning/danger ambient glow
+   ============================================ */
+.ambient-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+.ambient-glow--danger {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(239, 68, 68, 0.10), transparent),
+    radial-gradient(ellipse 40% 30% at 50% 45%, rgba(239, 68, 68, 0.06), transparent 70%);
+}
+
+.ambient-glow--calm {
+  background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(59, 130, 246, 0.05), transparent);
+}
+
+/* ============================================
+   Star field (CSS particles)
+   ============================================ */
+.starfield {
+  display: none;
+}
+
+.star {
+  display: none;
+}
+
+.star--bright {
+  display: none;
+}
+
+/* ============================================
+   City Labels (HTML overlays on globe)
+   ============================================ */
+.city-label {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transform: translate(-50%, 0);
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.8));
+}
+
+.city-label--host .city-label__name {
+  color: var(--host-gold);
+}
+
+.city-label__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--atmosphere-blue);
+  box-shadow: 0 0 8px var(--atmosphere-blue);
+}
+
+.city-label__dot--host {
+  background: var(--host-gold);
+  box-shadow: 0 0 8px var(--host-gold);
+}
+
+.city-label__crown {
+  font-size: 14px;
+  margin-left: -2px;
+}
+
+.city-label__name {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* ============================================
+   Message Packet — dot with trailing line
+   ============================================ */
+.msg-packet {
+  position: absolute;
+  z-index: 50;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+.msg-packet__dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #007AFF;
+  box-shadow: 0 0 20px rgba(0, 122, 255, 0.5);
+  flex-shrink: 0;
+}
+
+/* ============================================
+   Globe City Labels
+   ============================================ */
+.globe-city-label {
+  position: absolute;
+  transform: translateX(-50%);
+  font-family: -apple-system, 'SF Pro Text', 'SF Pro Display', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #FFFFFF;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  pointer-events: none;
+  text-shadow:
+    0 0 10px rgba(0, 122, 255, 0.6),
+    0 0 20px rgba(0, 0, 0, 0.8),
+    0 1px 3px rgba(0, 0, 0, 0.9);
+  z-index: 10;
+}
+
+/* ============================================
+   Video Player Frame (wraps around the globe)
+   Apple TV+ style — minimal, quiet, deliberate
+   ============================================ */
+.vp-frame {
+  pointer-events: none;
+}
+
+/* ── Play button — circle with triangle, centered on globe ── */
+.vp-frame__play-btn {
+  z-index: 10;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+}
+
+/* ── Cursor — macOS-style pointer arrow ── */
+.vp-frame__cursor {
+  z-index: 20;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+}
+
+/* ── Controls area — bottom inside the frame border ── */
+.vp-frame__controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0 24px 20px;
+}
+
+/* ── Title — centered above progress bar ── */
+.vp-frame__title {
+  font-family: -apple-system, 'SF Pro Display', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  margin-bottom: 10px;
+  letter-spacing: -0.01em;
+}
+
+/* ── Progress bar — 2px track, red fill at 8%, 6px white scrubber head ── */
+.vp-frame__progress {
+  position: relative;
+  height: 2px;
+  margin-bottom: 8px;
+}
+
+.vp-frame__progress-track {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 1px;
+}
+
+.vp-frame__progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 8%;
+  background: #FF3B30;
+  border-radius: 1px;
+}
+
+.vp-frame__progress-head {
+  position: absolute;
+  left: 8%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  background: #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  /* No box-shadow — Apple keeps scrubber heads clean */
+}
+
+/* ── Timestamps — left-aligned 0:24, right-aligned 3:24 ── */
+.vp-frame__timestamps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vp-frame__time-left,
+.vp-frame__time-right {
+  font-family: 'SF Mono', ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+/* Trailing line */
+.msg-packet__trail {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 14px;
+  background: linear-gradient(to left, #007AFF, rgba(0, 122, 255, 0));
+  border-radius: 7px;
+}
+
+/* ============================================
+   Title Reveal — Scene 4
+   Apple-style large typography with gradient
+   ============================================ */
+.title-reveal {
+  position: absolute;
+  left: 50%;
+  top: 570px;
+  transform: translateX(-50%);
+  z-index: 3;
+  pointer-events: none;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.title-reveal__line {
+  font-family: var(--font-sans);
+  font-size: 90px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.title-reveal__line--gradient {
+  background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.title-reveal__subtitle {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  margin-top: 24px;
+}
+
+/* ============================================
+   IDE Window — Scene 5
+   VS Code-style floating editor
+   ============================================ */
+.ide-window {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 1000px;
+  z-index: 20;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0D1117;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  pointer-events: none;
+}
+
+/* ── Title bar — macOS traffic lights + filename ── */
+.ide-titlebar {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 16px;
+  background: #161B22;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 12px;
+}
+
+.ide-titlebar__dots {
+  display: flex;
+  gap: 8px;
+}
+
+.ide-titlebar__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.ide-titlebar__dot--red { background: #FF5F57; }
+.ide-titlebar__dot--yellow { background: #FEBC2E; }
+.ide-titlebar__dot--green { background: #28C840; }
+
+.ide-titlebar__filename {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  margin-left: 8px;
+}
+
+/* ── Editor body — gutter + code side by side ── */
+.ide-body {
+  display: flex;
+  padding: 20px 0;
+}
+
+.ide-gutter {
+  flex-shrink: 0;
+  width: 52px;
+  text-align: right;
+  padding-right: 16px;
+  user-select: none;
+}
+
+.ide-gutter__num {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 24px;
+  color: #3F3F46;
+}
+
+.ide-code {
+  flex: 1;
+  padding-right: 24px;
+  overflow: hidden;
+}
+
+.ide-code__line {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 24px;
+  height: 24px;
+  color: #E4E4E7;
+  white-space: pre;
+}
+
+.ide-code__line-inner {
+  display: inline-block;
+  width: fit-content;
+  white-space: pre;
+}
+
+/* ── Syntax highlighting ── */
+.syn-kw {
+  color: #C084FC;
+}
+
+.syn-str {
+  color: #4ADE80;
+}
+
+.syn-type {
+  color: #22D3EE;
+}
+
+.syn-fn {
+  color: #60A5FA;
+}
+
+.syn-prop {
+  color: #E4E4E7;
+}
+
+.syn-punct {
+  color: #71717A;
+}
+
+/* ── Blinking cursor ── */
+.ide-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 16px;
+  background: transparent;
+  vertical-align: text-bottom;
+  margin-left: 1px;
+}
+
+.ide-cursor--active {
+  animation: cursor-blink 1s step-end infinite;
+}
+
+@keyframes cursor-blink {
+  0%, 50% { background: #E4E4E7; }
+  51%, 100% { background: transparent; }
+}

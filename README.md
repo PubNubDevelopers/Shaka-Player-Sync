@@ -8,6 +8,10 @@
 [![PubNub](https://img.shields.io/badge/Powered%20by-PubNub-E11D48)](https://www.pubnub.com/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
+<a href="https://www.youtube.com/watch?v=abHlKmXtNa4">
+  <video src="https://raw.githubusercontent.com/PubNubDevelopers/Shaka-Player-Sync/main/showcase/shaka-player-showcase.mp4" autoplay loop muted playsinline width="100%"></video>
+</a>
+
 </div>
 
 ---

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shaka Player Sync — Showcase</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Animation viewport — fixed 1920×1080 aspect -->
+  <div id="viewport">
+    <div id="scene-container"></div>
+
+    <!-- Dev controls overlay -->
+    <div id="dev-controls">
+      <button id="btn-play" title="Play">▶</button>
+      <button id="btn-pause" title="Pause">⏸</button>
+      <button id="btn-restart" title="Restart">⏮</button>
+      <input id="scrubber" type="range" min="0" max="60" step="0.1" value="0">
+      <span id="time-display">0.0s / 60.0s</span>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

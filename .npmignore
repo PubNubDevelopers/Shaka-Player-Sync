@@ -18,8 +18,9 @@ eslint.config.*
 .eslintrc*
 .prettierrc*
 
-# Demo (users can find in repo)
+# Demo and showcase (users can find in repo)
 demo/
+showcase/
 
 # Documentation (available on GitHub)
 docs/
