@@ -35,7 +35,7 @@ jobs:
     needs: release
     if: needs.release.outputs.release_created && needs.release.outputs.patch != '0'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # Check out the origin repo at main, not the PR branch.
           ref: main
@@ -58,7 +58,7 @@ jobs:
     needs: release
     if: needs.release.outputs.release_created
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: refs/tags/${{ needs.release.outputs.tag_name }}
           fetch-depth: 0
@@ -141,7 +141,7 @@ jobs:
     needs: release
     if: needs.release.outputs.release_created && needs.release.outputs.patch == '0'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: refs/tags/${{ needs.release.outputs.tag_name }}
           fetch-depth: 0
